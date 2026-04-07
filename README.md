@@ -4,6 +4,8 @@ An interactive tool for estimating lunar regolith composition, maturity, grain-s
 
 Built on the complete Apollo 11, 12, 14, 15, 16, 17 and Luna 16, 20, 24 returned-sample database -- the most comprehensive aggregation of ground-truth lunar soil data available.
 
+<img width="1193" height="616" alt="Screenshot 2026-04-06 at 8 24 54 PM" src="https://github.com/user-attachments/assets/2d4d9461-135b-4abf-8609-7a0e13aa8fbe" />
+
 ## Usage
 
 Open `lunar_regolith_tool.html` in any modern browser. No build tools, no server, no dependencies.
