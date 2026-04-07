@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunar Regolith Analysis Instrument — Selenographic Survey</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4efe6;
+    --paper-dark: #ebe4d4;
+    --ink: #1a1612;
+    --ink-soft: #3d342a;
+    --rule: #8a7a60;
+    --accent: #8b2e2e;
+    --accent-soft: #c4a574;
+    --mare: #2a2620;
+    --highland: #b8a888;
+    --grid: rgba(26, 22, 18, 0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    line-height: 1.5;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(139, 46, 46, 0.03), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(196, 165, 116, 0.05), transparent 50%);
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none; opacity: 0.5; mix-blend-mode: multiply; z-index: 1;
+  }
+  .container {
+    max-width: 1400px; margin: 0 auto; padding: 40px 56px 80px;
+    position: relative; z-index: 2;
+  }
+  header {
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 24px; margin-bottom: 32px;
+    display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end;
+  }
+  .title-block .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 8px;
+  }
+  .title-block h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 52px; font-weight: 500; line-height: 0.95;
+    font-style: italic; letter-spacing: -0.01em;
+  }
+  .title-block h1 span { font-style: normal; font-weight: 700; }
+  .meta {
+    text-align: right; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; color: var(--ink-soft);
+    line-height: 1.8;
+  }
+  .meta strong { color: var(--ink); font-weight: 500; }
+
+  .abstract {
+    font-style: italic; font-size: 15px; line-height: 1.6;
+    max-width: 780px; margin-bottom: 36px; color: var(--ink-soft);
+    border-left: 2px solid var(--accent); padding-left: 18px;
+  }
+  .abstract::before { content: "Abstract. "; font-weight: 600; font-style: normal; color: var(--ink); }
+
+  .workspace {
+    display: grid; grid-template-columns: 380px 1fr; gap: 40px;
+    align-items: start;
+  }
+
+  /* ───── MAP ───── */
+  .map-section {
+    position: sticky; top: 24px;
+    align-self: start;
+  }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .section-label .fig-num {
+    font-style: italic; font-family: 'EB Garamond', serif;
+    font-size: 13px; text-transform: none; letter-spacing: 0;
+  }
+  .map-frame {
+    border: 1px solid var(--ink); background: var(--paper-dark);
+    position: relative; aspect-ratio: 1 / 1;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.1), inset 0 0 0 6px var(--paper-dark), inset 0 0 0 7px var(--ink);
+  }
+  #moonCanvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+  .map-caption {
+    font-size: 13px; font-style: italic; color: var(--ink-soft);
+    margin-top: 10px; text-align: center; line-height: 1.4;
+  }
+  .coordinates-readout {
+    position: absolute; bottom: 12px; left: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    background: rgba(244, 239, 230, 0.92); padding: 6px 10px;
+    border: 1px solid var(--ink); letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+  .region-legend {
+    margin-top: 18px; display: flex; gap: 24px; flex-wrap: wrap;
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    color: var(--ink-soft); padding: 12px 0; border-top: 1px solid var(--grid);
+    border-bottom: 1px solid var(--grid);
+  }
+  .manual-coords {
+    margin-top: 12px; display: flex; gap: 8px; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-soft);
+  }
+  .manual-coords label { letter-spacing: 0.08em; }
+  .manual-coords input[type="number"] {
+    width: 72px; padding: 4px 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--rule);
+    text-align: right;
+  }
+  .manual-coords input[type="number"]:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .manual-coords button {
+    padding: 4px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--ink); color: var(--paper); border: none; cursor: pointer;
+  }
+  .manual-coords button:hover { background: var(--accent); }
+  .manual-coords .coord-err {
+    font-size: 10px; color: var(--accent); font-style: italic;
+  }
+  .region-legend span { display: flex; align-items: center; gap: 6px; }
+  .swatch {
+    width: 12px; height: 12px; border: 1px solid var(--ink); display: inline-block;
+  }
+
+  /* ───── CONTROL + RESULTS ───── */
+  .panel {
+    border: 1px solid var(--ink); background: var(--paper-dark);
+    padding: 24px; position: relative;
+  }
+  .panel + .panel { margin-top: 24px; }
+  .panel-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; font-weight: 700; margin-bottom: 4px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .panel-title .roman {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    font-weight: 400; color: var(--accent); letter-spacing: 0.1em;
+  }
+  .panel-sub {
+    font-size: 13px; font-style: italic; color: var(--ink-soft);
+    margin-bottom: 20px; padding-bottom: 14px;
+    border-bottom: 1px dashed var(--rule);
+  }
+
+  .depth-control { margin-top: 4px; }
+  .depth-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .depth-label .name {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .depth-value {
+    font-family: 'Cormorant Garamond', serif; font-size: 32px;
+    font-weight: 700; line-height: 1;
+  }
+  .depth-value .unit {
+    font-size: 14px; font-family: 'JetBrains Mono', monospace;
+    color: var(--ink-soft); margin-left: 4px; font-weight: 400;
+  }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 2px; background: var(--ink);
+    outline: none; margin: 8px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; background: var(--paper);
+    border: 1.5px solid var(--ink); border-radius: 50%;
+    cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px; background: var(--paper);
+    border: 1.5px solid var(--ink); border-radius: 50%; cursor: pointer;
+  }
+  .depth-ticks {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-soft); margin-top: 4px;
+  }
+
+  .empty-state {
+    text-align: center; padding: 32px 12px; font-style: italic;
+    color: var(--ink-soft); font-size: 15px; line-height: 1.5;
+  }
+  .empty-state .ornament {
+    font-size: 22px; color: var(--accent); margin-bottom: 10px;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  .region-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 700; font-style: italic;
+    line-height: 1.1; margin-bottom: 2px;
+  }
+  .region-type {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 14px;
+  }
+
+  h3.subhead {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 18px 0 10px;
+    padding-bottom: 4px; border-bottom: 1px solid var(--ink);
+    display: flex; justify-content: space-between;
+  }
+  h3.subhead .roman { color: var(--accent); }
+
+  .bar-row {
+    display: grid; grid-template-columns: 130px 1fr 90px;
+    align-items: center; gap: 10px; margin-bottom: 7px;
+    font-size: 13px;
+  }
+  .bar-row .name { font-variant: small-caps; letter-spacing: 0.03em; }
+  .bar-row .formula {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-soft); display: block; margin-top: -1px;
+  }
+  .bar-track {
+    height: 10px; background: var(--paper);
+    border: 1px solid var(--ink); position: relative; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; background: repeating-linear-gradient(
+      45deg, var(--ink) 0, var(--ink) 1px,
+      var(--ink-soft) 1px, var(--ink-soft) 3px);
+    transition: width 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  .bar-fill.accent { background: var(--accent); }
+  .bar-fill.highland-fill {
+    background: repeating-linear-gradient(90deg,
+      var(--accent-soft) 0, var(--accent-soft) 2px,
+      var(--ink-soft) 2px, var(--ink-soft) 3px);
+  }
+  .bar-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    text-align: right; color: var(--ink);
+  }
+  .sigma {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-soft); font-weight: 300; letter-spacing: -0.02em;
+  }
+  .stat-box .sigma {
+    font-size: 11px; font-weight: 400;
+  }
+
+  /* Grain size histogram */
+  .size-dist {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+    align-items: end; height: 120px; margin: 14px 0 6px;
+    border-bottom: 1px solid var(--ink); padding: 0 2px 0;
+  }
+  .size-bar {
+    background: var(--ink); position: relative;
+    transition: height 0.7s cubic-bezier(0.25, 0.1, 0.25, 1);
+    min-height: 2px;
+  }
+  .size-bar::after {
+    content: attr(data-val) "%";
+    position: absolute; top: -16px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink);
+  }
+  .size-bar:nth-child(1) { background: #1a1612; }
+  .size-bar:nth-child(2) { background: #3d342a; }
+  .size-bar:nth-child(3) { background: #6b5a42; }
+  .size-bar:nth-child(4) { background: #8b7552; }
+  .size-bar:nth-child(5) { background: #a89070; }
+  .size-bar:nth-child(6) { background: #c4a574; }
+  .size-labels {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    text-align: center; color: var(--ink-soft); line-height: 1.3;
+    margin-top: 4px;
+  }
+  .size-labels div small { display: block; font-size: 7px; opacity: 0.7; }
+
+  /* Particle type stacked bar */
+  .particle-bar {
+    display: flex; height: 24px; border: 1px solid var(--ink);
+    overflow: hidden; margin: 14px 0 8px;
+  }
+  .particle-bar .seg {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--paper); transition: width 0.7s cubic-bezier(0.25, 0.1, 0.25, 1);
+    min-width: 0; overflow: hidden; white-space: nowrap;
+  }
+  .seg-aggl { background: var(--ink); }
+  .seg-lithic {
+    background: repeating-linear-gradient(
+      45deg, #6b5a42 0, #6b5a42 2px, #8b7552 2px, #8b7552 4px);
+    color: var(--paper);
+  }
+  .seg-mineral { background: var(--accent-soft); color: var(--ink); }
+  .seg-glass { background: var(--paper); color: var(--ink); border-left: 1px solid var(--rule); }
+  .particle-legend {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-soft); line-height: 1.4;
+  }
+  .particle-legend .pl-item { display: flex; align-items: center; gap: 4px; }
+  .particle-legend .pl-swatch {
+    width: 10px; height: 10px; border: 1px solid var(--ink); display: inline-block; flex-shrink: 0;
+  }
+
+  .stats-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;
+  }
+  .stat-box {
+    border: 1px solid var(--ink); padding: 10px 12px; background: var(--paper);
+  }
+  .stat-box .lbl {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft);
+  }
+  .stat-box .val {
+    font-family: 'Cormorant Garamond', serif; font-size: 22px;
+    font-weight: 700; line-height: 1.1; margin-top: 2px;
+  }
+  .stat-box .val .unit {
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    color: var(--ink-soft); font-weight: 400;
+  }
+
+  /* ───── TAB BAR ───── */
+  .tab-bar {
+    display: flex; gap: 0; margin-bottom: 24px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .tab-btn {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    background: none; border: 1px solid transparent;
+    border-bottom: none; padding: 10px 18px; cursor: pointer;
+    color: var(--ink-soft); position: relative; top: 1px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active {
+    color: var(--ink); background: var(--paper);
+    border-color: var(--ink); border-bottom-color: var(--paper);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ───── TERRANE BADGE ───── */
+  .terrane-badge {
+    display: inline-block; font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 8px; border: 1px solid var(--accent);
+    color: var(--accent); margin-bottom: 10px;
+  }
+
+  /* ───── MATURITY METER ───── */
+  .maturity-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;
+  }
+  .maturity-bar-track {
+    height: 8px; background: var(--paper); border: 1px solid var(--ink);
+    position: relative; overflow: hidden; margin-top: 6px;
+  }
+  .maturity-bar-fill {
+    height: 100%; transition: width 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  .maturity-bar-fill.immature { background: #a89070; }
+  .maturity-bar-fill.submature { background: #8b7552; }
+  .maturity-bar-fill.mature { background: #3d342a; }
+
+  .depth-note {
+    font-size: 12px; font-style: italic; color: var(--ink-soft);
+    margin-top: 12px; padding: 10px; border: 1px dashed var(--rule);
+    line-height: 1.4;
+  }
+
+  /* ───── PROVENANCE ───── */
+  .provenance {
+    margin-top: 14px; font-size: 12px; color: var(--ink-soft);
+  }
+  .provenance summary {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; padding: 6px 0;
+    border-top: 1px solid var(--grid);
+  }
+  .provenance summary:hover { color: var(--ink); }
+  .provenance-content {
+    padding: 8px 0; line-height: 1.6;
+  }
+  .provenance-site {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 2px 0; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  }
+  .provenance-site .weight { color: var(--accent); }
+
+  /* ───── REFERENCES ───── */
+  .reference-list {
+    list-style: none; counter-reset: ref-counter;
+    padding: 0; font-size: 13px; line-height: 1.6;
+  }
+  .reference-list li {
+    counter-increment: ref-counter; padding: 8px 0;
+    border-bottom: 1px solid var(--grid); padding-left: 28px;
+    position: relative;
+  }
+  .reference-list li::before {
+    content: "[" counter(ref-counter) "]";
+    position: absolute; left: 0; top: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--accent);
+  }
+  .reference-list li .ref-authors {
+    font-variant: small-caps;
+  }
+  .reference-list li .ref-title {
+    font-style: italic;
+  }
+  .reference-list li .ref-journal {
+    color: var(--ink-soft);
+  }
+
+  footer {
+    margin-top: 56px; padding-top: 20px;
+    border-top: 1px solid var(--ink);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    font-size: 11px; color: var(--ink-soft); font-style: italic;
+    line-height: 1.5;
+  }
+  footer .right { text-align: right; }
+  footer strong { color: var(--ink); font-style: normal;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; text-transform: uppercase; }
+
+  @media (max-width: 1100px) {
+    .workspace { grid-template-columns: 1fr; }
+    .container { padding: 24px; }
+    .title-block h1 { font-size: 38px; }
+    header { grid-template-columns: 1fr; }
+    .meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">Selenographic Survey · MAGNA PETRA</div>
+      <h1>Lunar Regolith <span>Compositional</span> <em>Analyser</em></h1>
+    </div>
+    <div class="meta">
+      <strong>SJD ·  CTO</strong><br>
+      IDW-Interpolated Model<br>
+      Apollo / Luna Sample Suite
+    </div>
+  </header>
+
+  <p class="abstract">
+    This instrument permits the examination of estimated lunar regolith composition, maturity, and grain-size distribution for arbitrary near-side localities, integrated over a user-specified depth column. Compositional estimates are derived by inverse-distance-weighted interpolation from Apollo 11, 12, 14, 15, 16, 17 and Luna 16, 20, 24 returned-sample analyses. Depth-dependent quantities (agglutinate fraction, I<sub>s</sub>/FeO maturity index) follow empirical decay models calibrated to Apollo core-tube data. Major-oxide composition is treated as depth-invariant within the gardened zone (0–30 cm). Select a locality upon the hemispheric map; adjust the depth of analysis to obtain column-averaged maturity values.
+  </p>
+
+  <div class="workspace">
+
+    <!-- ───────── MAP ───────── -->
+    <section class="map-section">
+      <div class="section-label">
+        <span>Near-Side Hemisphere · Orthographic Projection</span>
+        <span class="fig-num">Fig. I</span>
+      </div>
+      <div class="map-frame">
+        <canvas id="moonCanvas" width="800" height="800"></canvas>
+        <div class="coordinates-readout" id="coordReadout">LAT ——·—— · LON ——·——</div>
+      </div>
+      <div class="manual-coords">
+        <label>LAT</label>
+        <input type="number" id="manualLat" min="-90" max="90" step="0.01" placeholder="0.00">
+        <label>LON</label>
+        <input type="number" id="manualLon" min="-180" max="180" step="0.01" placeholder="0.00">
+        <button id="manualGoBtn">Go</button>
+        <span class="coord-err" id="coordErr"></span>
+      </div>
+      <div class="map-caption">Click upon any point of the illuminated disc to sample the underlying regolith column. Diamond markers indicate Apollo/Luna sample-return sites. <em>Basemap: NASA/LRO WAC mosaic.</em></div>
+      <div class="region-legend">
+        <span><span class="swatch" style="background:#2a2620"></span>Mare (basaltic)</span>
+        <span><span class="swatch" style="background:#b8a888"></span>Highland (anorthositic)</span>
+        <span><span class="swatch" style="background:#ffffff;border-color:#999"></span>Sample-return site</span>
+      </div>
+    </section>
+
+    <!-- ───────── PANELS ───────── -->
+    <aside>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="analysis" onclick="switchTab('analysis')">Analysis</button>
+        <button class="tab-btn" data-tab="methodology" onclick="switchTab('methodology')">Methodology</button>
+        <button class="tab-btn" data-tab="references" onclick="switchTab('references')">References</button>
+      </div>
+
+      <div class="tab-content active" id="tab-analysis">
+
+        <div class="panel">
+          <div class="panel-title">Depth of Analysis <span class="roman">§ II</span></div>
+          <div class="panel-sub">Column-integrated average from surface (0 cm) to selected depth.</div>
+          <div class="depth-control">
+            <div class="depth-label">
+              <span class="name">Integration Depth</span>
+              <span class="depth-value" id="depthValue">3.0<span class="unit">cm</span></span>
+            </div>
+            <input type="range" id="depthSlider" min="0.5" max="30" step="0.5" value="3">
+            <div class="depth-ticks">
+              <span>0.5 cm</span><span>10 cm</span><span>20 cm</span><span>30 cm</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="resultsPanel">
+          <div class="panel-title">Sample Report <span class="roman">§ III</span></div>
+          <div class="panel-sub">Estimated composition, maturity &amp; grain-size distribution.</div>
+          <div id="resultsBody">
+            <div class="empty-state">
+              <div class="ornament">&#10022; · &#10022;</div>
+              <em>Awaiting locality selection.</em><br>
+              Click the lunar disc to commence analysis.
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tab-analysis -->
+
+      <div class="tab-content" id="tab-references">
+
+        <div class="panel">
+          <div class="panel-title">References <span class="roman">§ IV</span></div>
+          <div class="panel-sub">Primary sources for all compositional and physical data used in this instrument.</div>
+          <ol class="reference-list">
+            <li>
+              <span class="ref-authors">Heiken, G. H., Vaniman, D. T. &amp; French, B. M.</span> (1991).
+              <span class="ref-title">Lunar Sourcebook: A User's Guide to the Moon.</span>
+              <span class="ref-journal">Cambridge University Press. Chs. 7–8, Appendix tables. Available from LPI.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Meyer, C.</span> (2012).
+              <span class="ref-title">Lunar Sample Compendium.</span>
+              <span class="ref-journal">NASA JSC. Per-sample bulk-soil analyses for Apollo and Luna missions.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Jolliff, B. L., Gillis, J. J., Haskin, L. A., Korotev, R. L. &amp; Wieczorek, M. A.</span> (2000).
+              <span class="ref-title">Major lunar crustal terranes: Surface expressions and crust-mantle origins.</span>
+              <span class="ref-journal">J. Geophys. Res. Planets, 105, 4197–4216. Terrane boundary definitions (PKT, FHT, SPA).</span>
+            </li>
+            <li>
+              <span class="ref-authors">Lucey, P. G., Blewett, D. T. &amp; Jolliff, B. L.</span> (2000).
+              <span class="ref-title">Lunar iron and titanium abundance algorithms based on final processing of Clementine UV-Vis images.</span>
+              <span class="ref-journal">J. Geophys. Res. Planets, 105, 20297–20305.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Lawrence, D. J., Feldman, W. C., Elphic, R. C., et al.</span> (2003).
+              <span class="ref-title">Small-area thorium features on the lunar surface.</span>
+              <span class="ref-journal">J. Geophys. Res. Planets, 108(E9), 5102. LP GRS thorium maps.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Morris, R. V.</span> (1978).
+              <span class="ref-title">The surface exposure (maturity) of lunar soils: Some concepts and I<sub>s</sub>/FeO compilation.</span>
+              <span class="ref-journal">Proc. LPSC IX, 2287–2297. Maturity index definition and classification thresholds.</span>
+            </li>
+            <li>
+              <span class="ref-authors">McKay, D. S., Fruland, R. M. &amp; Heiken, G. H.</span> (1974).
+              <span class="ref-title">Grain size and the evolution of lunar soils.</span>
+              <span class="ref-journal">Proc. LPSC V, 887–906. Agglutinate size-fraction partitioning (Fig. 3); modal abundance evolution with maturity.</span>
+            </li>
+            <li>
+              <span class="ref-authors">McKay, D. S., Heiken, G., Basu, A., Blanford, G., et al.</span> (1991).
+              <span class="ref-title">The lunar regolith.</span>
+              <span class="ref-journal">In: Lunar Sourcebook (Heiken et al.), Ch. 7, 285–356. Depth-invariance of grain size; agglutinate-depth profiles; particle type modal data (Table 7.9).</span>
+            </li>
+            <li>
+              <span class="ref-authors">Graf, J. C.</span> (1993).
+              <span class="ref-title">Lunar Soils Grain Size Catalog.</span>
+              <span class="ref-journal">NASA RP-1265. Compiled grain-size distributions for all Apollo and Luna soil samples.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Papike, J. J., Simon, S. B. &amp; Laul, J. C.</span> (1982).
+              <span class="ref-title">The lunar regolith: Chemistry, mineralogy, and petrology.</span>
+              <span class="ref-journal">Rev. Geophys. Space Phys., 20, 761–826. Compiled modal mineralogy across missions (Table 4); particle type abundances for Luna samples.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Neal, C. R. &amp; Taylor, L. A.</span> (1992).
+              <span class="ref-title">Petrogenesis of mare basalts: A record of lunar volcanism.</span>
+              <span class="ref-journal">Geochim. Cosmochim. Acta, 56, 2177–2211. TiO₂ classification thresholds for mare basalts.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Korotev, R. L.</span> (2005).
+              <span class="ref-title">Lunar geochemistry as told by lunar meteorites.</span>
+              <span class="ref-journal">Chemie der Erde, 65, 297–346. Highland and KREEP compositions.</span>
+            </li>
+            <li>
+              <span class="ref-authors">Heiken, G. H., McKay, D. S. &amp; Brown, R. W.</span> (1974).
+              <span class="ref-title">Lunar deposits of possible pyroclastic origin.</span>
+              <span class="ref-journal">Geochim. Cosmochim. Acta, 38, 1703–1718.</span>
+            </li>
+          </ol>
+
+          <div class="depth-note" style="margin-top:20px">
+            <strong style="font-style:normal">Known limitations:</strong> This model does not include pyroclastic glass deposits (e.g., Aristarchus Plateau orange/black glass), permanently shadowed region volatile content, magnetic anomaly swirls (e.g., Reiner Gamma), or farside sample coverage. Values beyond ~30° from any sample-return site are poorly constrained extrapolations. See the Methodology tab (&sect; V.g) for full discussion.
+          </div>
+        </div>
+
+      </div><!-- /tab-references -->
+
+      <div class="tab-content" id="tab-methodology">
+
+        <div class="panel">
+          <div class="panel-title">Methodology <span class="roman">§ V</span></div>
+          <div class="panel-sub">Complete description of data sources, models, and computational methods used by this instrument.</div>
+
+          <!-- ── V.a Sample Database ── -->
+          <h3 class="subhead"><span>Sample Database</span><span class="roman">v.a</span></h3>
+          <p style="margin-bottom:12px">
+            All compositional, maturity, grain-size, and particle-type data are anchored to nine Apollo and Luna sample-return sites. Each site contributes a representative bulk-soil analysis from the gardened surface layer.
+          </p>
+          <div style="overflow-x:auto;margin-bottom:16px">
+            <table style="width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.03em">
+              <thead>
+                <tr style="border-bottom:2px solid var(--ink);text-align:left">
+                  <th style="padding:6px 8px">Mission</th>
+                  <th style="padding:6px 8px">Site</th>
+                  <th style="padding:6px 8px">Lat</th>
+                  <th style="padding:6px 8px">Lon</th>
+                  <th style="padding:6px 8px">Type</th>
+                  <th style="padding:6px 8px">Sample</th>
+                </tr>
+              </thead>
+              <tbody style="color:var(--ink-soft)">
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Apollo 11</td><td style="padding:4px 8px">Mare Tranquillitatis</td><td style="padding:4px 8px">+0.67°</td><td style="padding:4px 8px">+23.47°</td><td style="padding:4px 8px">Mare (high-Ti)</td><td style="padding:4px 8px">10084</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Apollo 12</td><td style="padding:4px 8px">Oceanus Procellarum</td><td style="padding:4px 8px">&minus;3.01°</td><td style="padding:4px 8px">&minus;23.42°</td><td style="padding:4px 8px">Mare (low-Ti)</td><td style="padding:4px 8px">12070</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Apollo 14</td><td style="padding:4px 8px">Fra Mauro Formation</td><td style="padding:4px 8px">&minus;3.65°</td><td style="padding:4px 8px">&minus;17.47°</td><td style="padding:4px 8px">KREEP-rich</td><td style="padding:4px 8px">14163</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Apollo 15</td><td style="padding:4px 8px">Hadley&ndash;Apennine</td><td style="padding:4px 8px">+26.13°</td><td style="padding:4px 8px">+3.63°</td><td style="padding:4px 8px">Mare (low-Ti)</td><td style="padding:4px 8px">15271</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Apollo 16</td><td style="padding:4px 8px">Descartes Highlands</td><td style="padding:4px 8px">&minus;8.97°</td><td style="padding:4px 8px">+15.50°</td><td style="padding:4px 8px">Highland</td><td style="padding:4px 8px">64801</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Apollo 17</td><td style="padding:4px 8px">Taurus&ndash;Littrow</td><td style="padding:4px 8px">+20.19°</td><td style="padding:4px 8px">+30.77°</td><td style="padding:4px 8px">Mare (high-Ti)</td><td style="padding:4px 8px">70181</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Luna 16</td><td style="padding:4px 8px">Mare Fecunditatis</td><td style="padding:4px 8px">&minus;0.68°</td><td style="padding:4px 8px">+56.30°</td><td style="padding:4px 8px">Mare (mid-Ti)</td><td style="padding:4px 8px">L16 core</td></tr>
+                <tr style="border-bottom:1px solid var(--grid)"><td style="padding:4px 8px">Luna 20</td><td style="padding:4px 8px">Apollonius Highlands</td><td style="padding:4px 8px">+3.53°</td><td style="padding:4px 8px">+56.55°</td><td style="padding:4px 8px">Highland</td><td style="padding:4px 8px">L20 regolith</td></tr>
+                <tr><td style="padding:4px 8px">Luna 24</td><td style="padding:4px 8px">Mare Crisium</td><td style="padding:4px 8px">+12.75°</td><td style="padding:4px 8px">+62.20°</td><td style="padding:4px 8px">Mare (v.low-Ti)</td><td style="padding:4px 8px">L24 drill core</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="depth-note">
+            For each site, the database stores: 11 major-oxide concentrations (wt%), thorium (ppm), I<sub>s</sub>/FeO maturity index, agglutinate fraction (%), mean grain size and 6-bin Wentworth distribution (vol%), and particle type modal abundances (vol%, 90&ndash;150 &mu;m fraction). Primary sources: Heiken, Vaniman &amp; French (1991) <em>Lunar Sourcebook</em> Tables 8.2&ndash;8.6; Meyer (2012) <em>Lunar Sample Compendium</em>; Graf (1993) NASA RP-1265; Papike, Simon &amp; Laul (1982).
+          </div>
+
+          <!-- ── V.b Spatial Interpolation ── -->
+          <h3 class="subhead" style="margin-top:24px"><span>Spatial Interpolation</span><span class="roman">v.b</span></h3>
+          <p style="margin-bottom:8px">
+            For any clicked selenographic coordinate, properties are estimated by <strong>inverse-distance-weighted (IDW) interpolation</strong> from the <em>N</em>&thinsp;=&thinsp;5 nearest sample-return sites.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Distance metric.</strong> Great-circle (angular) distance on a spherical Moon (<em>R</em>&thinsp;=&thinsp;1737.4 km). Computed via the Haversine formula.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Weighting.</strong> Each site receives weight <em>w<sub>i</sub></em>&thinsp;=&thinsp;1/<em>d<sub>i</sub></em>&sup2;, where <em>d<sub>i</sub></em> is the angular distance in degrees (floored at 0.1° to prevent singularity). The interpolated value of any property <em>P</em> is:
+          </p>
+          <div style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;margin:12px 0 16px">
+            P&#x0302; = &Sigma; w<sub>i</sub> P<sub>i</sub> / &Sigma; w<sub>i</sub>
+          </div>
+          <p style="margin-bottom:8px">
+            <strong>Cross-type penalty.</strong> When a sample site&rsquo;s terrain type (mare or highland) differs from the clicked locality&rsquo;s classification, its effective distance is inflated 3&times;. This prevents unrealistic blending across sharp mare&ndash;highland contacts (e.g., an Apollo 16 highland value contaminating a nearby mare estimate). The &ldquo;margin&rdquo; locality type blends freely with both.
+          </p>
+          <div class="depth-note">
+            All interpolated distributions (grain size, modal abundances) are renormalized to sum to 100% after weighting. This is a conservative spatial model &mdash; values degrade significantly beyond ~30° from any sample site. With only 9 anchor points, this is an interpolation, not a map.
+          </div>
+          <p style="margin-top:12px;margin-bottom:8px">
+            <strong>Uncertainty estimation.</strong> For each interpolated quantity, a weighted standard deviation is reported as a &plusmn; range, measuring inter-site dispersion among contributing samples:
+          </p>
+          <div style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;margin:12px 0 16px">
+            &sigma; = &radic;( &Sigma; w<sub>i</sub> (P<sub>i</sub> &minus; P&#x0302;)&sup2; / &Sigma; w<sub>i</sub> )
+          </div>
+          <p style="margin-bottom:8px">
+            This quantifies how much the nearest sample sites disagree at a given location. Near a sample-return site, &sigma; approaches zero (one site dominates). At distant or boundary locations, &sigma; grows as dissimilar sites contribute more equally. For depth-dependent quantities (I<sub>s</sub>/FeO, agglutinate fraction), &sigma; is propagated through the same exponential decay integration used for the mean, which is mathematically valid because the decay is a multiplicative scaling that factors out of the variance.
+          </p>
+          <div class="depth-note">
+            These &plusmn; values reflect <em>spatial dispersion</em> among a small number of anchor sites (N&thinsp;&le;&thinsp;5), not formal analytical uncertainties or prediction intervals. With only 9 total sites, they should be interpreted as indicative of interpolation confidence rather than rigorous error bounds.
+          </div>
+
+          <!-- ── V.c Terrane Classification ── -->
+          <h3 class="subhead" style="margin-top:24px"><span>Terrane Classification</span><span class="roman">v.c</span></h3>
+          <p style="margin-bottom:8px">
+            The instrument classifies each clicked point into one of three major geochemical terranes defined by Jolliff et al. (2000):
+          </p>
+          <p style="margin-bottom:4px"><strong>Procellarum KREEP Terrane (PKT)</strong> &mdash; elevated Th (&gt;3.5 ppm), K, and rare-earth elements, centered on Oceanus Procellarum and Mare Imbrium. Defined by a rough polygon boundary approximating Jolliff et al. (2000) Fig. 1.</p>
+          <p style="margin-bottom:4px"><strong>South Pole&ndash;Aitken Terrane (SPA)</strong> &mdash; lower Al<sub>2</sub>O<sub>3</sub> and elevated FeO relative to typical highlands, possibly exposing mantle material. Only the near-limb edge is visible on the nearside map.</p>
+          <p style="margin-bottom:8px"><strong>Feldspathic Highlands Terrane (FHT)</strong> &mdash; the default classification for points outside PKT and SPA boundaries. Low FeO, high Al<sub>2</sub>O<sub>3</sub>.</p>
+          <p style="margin-bottom:8px">
+            Terrane assignment uses point-in-polygon testing against approximate boundary coordinates. For mare localities, the TiO<sub>2</sub> content is further classified using Neal &amp; Taylor (1992) thresholds: High-Ti (&gt;6 wt%), Low-Ti (1&ndash;6 wt%), Very-Low-Ti (&lt;1 wt%).
+          </p>
+
+          <!-- ── V.d Depth Model ── -->
+          <h3 class="subhead" style="margin-top:24px"><span>Depth-Dependent Maturity Model</span><span class="roman">v.d</span></h3>
+          <p style="margin-bottom:8px">
+            Space-weathering effects (maturity) are strongest at the surface and decay with depth. The instrument models this as an <strong>exponential decay</strong>:
+          </p>
+          <div style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;margin:12px 0">
+            I<sub>s</sub>/FeO(d) = I<sub>s</sub>/FeO<sub>surface</sub> &middot; e<sup>&minus;kd</sup>
+          </div>
+          <p style="margin-bottom:8px">
+            where <em>k</em>&thinsp;=&thinsp;0.04 cm<sup>&minus;1</sup> and <em>d</em> is depth in centimetres. The same decay applies to agglutinate fraction. This yields:
+          </p>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);margin:8px 0 12px;line-height:1.8">
+            d = 0 cm: 100% of surface value<br>
+            d = 10 cm: ~67% of surface value<br>
+            d = 25 cm: ~37% of surface value<br>
+            d = 50 cm: ~14% of surface value
+          </div>
+          <p style="margin-bottom:8px">
+            <strong>Calibration.</strong> The decay constant <em>k</em> was fitted to the Apollo 15 deep drill core (samples 15001&ndash;15006, 240 cm total depth), which provides the longest continuous regolith profile. I<sub>s</sub>/FeO drops from ~60 at the surface to ~15 at depth (Morris 1978, Fig. 5). Apollo 16 cores (60001&ndash;60004) show a consistent profile.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Column averaging.</strong> For any user-selected integration depth <em>D</em>, the instrument reports the column-averaged value computed by trapezoidal numerical integration over [0,&thinsp;<em>D</em>] with 24 equal steps.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Major-oxide composition</strong> is treated as <strong>depth-invariant</strong> in the gardened zone (0&ndash;~50 cm). The regolith is vertically well-mixed on decimetre scales for major elements. Source: McKay et al. (1991).
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Maturity classification</strong> follows Morris (1978): Mature (I<sub>s</sub>/FeO &ge; 60), Submature (30&ndash;60), Immature (&lt;30).
+          </p>
+
+          <!-- ── V.e Grain-Size Model ── -->
+          <h3 class="subhead" style="margin-top:24px"><span>Grain-Size Distribution Model</span><span class="roman">v.e</span></h3>
+          <p style="margin-bottom:8px">
+            <strong>Surface distribution.</strong> Grain-size data for each site are stored as volume-percent in six Wentworth-scale bins: &lt;20, 20&ndash;50, 50&ndash;100, 100&ndash;250, 250&ndash;500, and &gt;500 &mu;m. Source: Graf (1993) NASA RP-1265, which compiled sieve analyses for all Apollo and Luna soil samples. Spatial interpolation follows the same IDW scheme as composition (&sect; V.b).
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Depth adjustment.</strong> While McKay et al. (1991) found no systematic grain-size trend with depth in the upper regolith, there is an indirect effect: agglutinates are preferentially concentrated in the finer size fractions (&lt;90 &mu;m). As agglutinate content decreases with depth (&sect; V.d), the fine fraction subtly shrinks and coarser fractions grow.
+          </p>
+          <p style="margin-bottom:8px">
+            The model removes material from the three finest bins proportional to agglutinate loss, using empirically-derived bin weights (McKay et al. 1974, Fig. 3):
+          </p>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);margin:8px 0 12px;line-height:1.8">
+            &lt;20 &mu;m: 40% of agglutinate mass<br>
+            20&ndash;50 &mu;m: 40% of agglutinate mass<br>
+            50&ndash;100 &mu;m: 20% of agglutinate mass<br>
+            &gt;100 &mu;m: 0% (agglutinates rarely exceed ~100 &mu;m)
+          </div>
+          <p style="margin-bottom:8px">
+            Removed material is redistributed proportionally into the three coarsest bins, and the distribution is renormalized. This produces a subtle shift of a few vol% at 30 cm depth &mdash; consistent with the secondary nature of this effect.
+          </p>
+
+          <!-- ── V.f Particle Types ── -->
+          <h3 class="subhead" style="margin-top:24px"><span>Particle Type Modal Abundances</span><span class="roman">v.f</span></h3>
+          <p style="margin-bottom:8px">
+            The instrument reports modal abundances in four particle-type categories (vol%, 90&ndash;150 &mu;m sieve fraction):
+          </p>
+          <p style="margin-bottom:4px"><strong>Agglutinates</strong> &mdash; glass-bonded aggregates of smaller grains formed by micrometeorite impacts. Irregular, vesicular morphology. Dominant maturity indicator.</p>
+          <p style="margin-bottom:4px"><strong>Lithic fragments</strong> &mdash; rock fragments (basalt, breccia, anorthosite). Angular to subangular.</p>
+          <p style="margin-bottom:4px"><strong>Mineral fragments</strong> &mdash; free mineral grains (plagioclase, pyroxene, olivine, ilmenite). Angular, reflecting crystal habit.</p>
+          <p style="margin-bottom:8px"><strong>Glass</strong> &mdash; impact glass (irregular, splashy) and volcanic glass beads (spherical). Reported combined as most published modal data do not separate them.</p>
+          <p style="margin-bottom:8px">
+            Source: Heiken et al. (1991) Table 7.9; Papike, Simon &amp; Laul (1982) Table 4. Values are IDW-interpolated (&sect; V.b) and renormalized.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong>Depth model.</strong> Agglutinate fraction decays with depth using the same exponential as I<sub>s</sub>/FeO (&sect; V.d). Glass is held constant (impact and volcanic origins are not maturity-dependent). Lost agglutinate material is redistributed proportionally into lithic and mineral fragments. Column averaging uses trapezoidal integration.
+          </p>
+
+          <!-- ── V.g Limitations ── -->
+          <h3 class="subhead" style="margin-top:24px"><span>Known Limitations</span><span class="roman">v.g</span></h3>
+          <div class="depth-note" style="margin-top:8px">
+            <p style="margin-bottom:10px">This instrument represents the most comprehensive aggregation of returned lunar soil data available. The Apollo (11, 12, 14, 15, 16, 17) and Luna (16, 20, 24) missions remain the sole source of ground-truth regolith samples from the lunar surface. The limitations enumerated below are therefore fundamental to the present state of lunar science&mdash;most can only be resolved through future landed missions and sample-return campaigns.</p>
+            <p style="margin-bottom:4px"><strong>No pyroclastic glass deposits.</strong> Dark mantle deposits (e.g., Aristarchus Plateau, Rima Bode) and localized pyroclastic glasses (Apollo 17 orange soil, Apollo 15 green glass) have distinctive Fe/Ti-rich compositions not captured by the bulk-soil database. Characterising these deposits requires in-situ sampling at pyroclastic source vents.</p>
+            <p style="margin-bottom:4px"><strong>No permanently shadowed region (PSR) volatiles.</strong> Cold-trapped H<sub>2</sub>O, OH, and other volatiles in polar PSRs are not modelled. No sample has ever been returned from a PSR; resolving this awaits missions such as VIPER or Lunar Polar Exploration.</p>
+            <p style="margin-bottom:4px"><strong>No magnetic anomaly swirls.</strong> Anomalous maturity patterns at locations such as Reiner Gamma are not represented. These features have never been sampled directly; their effect on regolith properties remains constrained only by remote sensing.</p>
+            <p style="margin-bottom:4px"><strong>No farside sample coverage.</strong> All nine sample-return sites are on the nearside. The farside&mdash;including the South Pole&ndash;Aitken basin, the largest recognised impact structure on the Moon&mdash;has no returned-sample ground truth. China&rsquo;s Chang&rsquo;e 5 (2020) returned nearside mare material; Chang&rsquo;e 6 (2024) delivered the first farside samples, but published bulk-soil analyses are not yet available for integration.</p>
+            <p style="margin-bottom:4px"><strong>Spatial coverage is sparse.</strong> Nine sites across a body 3,474 km in diameter yield an average spacing of ~15&deg; between anchor points. Points more than ~30&deg; from any sample site are poorly constrained extrapolations. Improving spatial resolution requires additional landed missions at geologically diverse localities.</p>
+            <p style="margin-bottom:4px"><strong>No embedded remote-sensing data.</strong> Orbital datasets (Lunar Prospector GRS, Clementine spectral reflectance) could supplement the sample-derived model with continuous spatial coverage, but have not yet been integrated. All values are interpolations from the returned-sample database alone.</p>
+            <p style="margin-bottom:4px"><strong>Uncertainty ranges are indicative.</strong> The reported &plusmn; values are weighted standard deviations reflecting inter-site dispersion among contributing samples (see &sect; V.b). With only 9 anchor sites and N&thinsp;&le;&thinsp;5 contributors per query, these are not formal prediction intervals&mdash;they are the best estimate achievable from the existing sample suite.</p>
+            <p style="margin-bottom:4px"><strong>Depth model is simplified.</strong> Real regolith cores show discrete strata, buried palaeosurfaces, and non-monotonic property variations. The smooth exponential decay used here is calibrated to the few deep drill cores returned (Apollo 15, 16, 17). Resolving true stratigraphic complexity requires in-situ drilling and core logging at new sites.</p>
+            <p><strong>Single representative soil per site.</strong> Each mission is represented by one bulk-soil analysis. In reality, soil composition varies at metre to kilometre scales within each landing ellipse. Multiple samples per site exist in the literature, but a single best-characterised reference soil was selected for each to maintain consistency. Capturing intra-site variability would require a substantially expanded database drawing on all available sample splits.</p>
+          </div>
+        </div>
+
+      </div><!-- /tab-methodology -->
+
+    </aside>
+  </div>
+
+  <footer>
+    <div>
+      <strong>Methodological Note</strong><br>
+      Compositions derived by inverse-distance-weighted interpolation from Apollo 11/12/14/15/16/17 and Luna 16/20/24 bulk-soil analyses (Heiken et al. 1991; Meyer 2012). Maturity model calibrated to Apollo 15 deep drill core and Apollo 16/17 core-tube data (Morris 1978; McKay et al. 1991). Grain-size distributions from Graf (1993) NASA RP-1265. Particle type modal abundances from Heiken et al. (1991) Table 7.9 and Papike et al. (1982), 90\u2013150 \u03BCm fraction; depth variation modelled via agglutinate decay with redistribution into lithic and mineral fragments. Terrane classification after Jolliff et al. (2000). All values are modelled estimates; actual regolith is heterogeneous at all scales.
+    </div>
+    <div class="right">
+      For pedagogical and research reference.
+    </div>
+  </footer>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   LUNAR REGOLITH MODEL — IDW-interpolated from Apollo/Luna samples
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════ SAMPLE DATABASE ═══════════════════
+   Each entry: a returned-sample site with full bulk-soil composition.
+   All compositions in wt% unless noted. Citations inline.
+   ═══════════════════════════════════════════════════════ */
+const SAMPLE_DB = [
+  {
+    name: "Apollo 11", abbr: "A11",
+    site: "Mare Tranquillitatis",
+    lat: 0.67, lon: 23.47,
+    type: "mare", terrane: "FHT",
+    // Bulk soil 10084 — high-Ti mare basalt
+    // Source: Heiken et al. (1991) Table 8.2; Meyer (2012) LSC 10084
+    comp: {
+      SiO2: 42.2, TiO2: 7.8, Al2O3: 13.6, FeO: 15.3,
+      MnO: 0.20, MgO: 7.8, CaO: 12.0, Na2O: 0.47,
+      K2O: 0.16, P2O5: 0.12, Cr2O3: 0.30
+    },
+    Th_ppm: 2.0,   // Source: Heiken et al. (1991) Table 8.8
+    isFeO: 68,      // Source: Morris (1978); mature soil
+    aggl_pct: 30,   // Source: McKay et al. (1974); Heiken et al. (1991) Table 7.9
+    // Grain-size distribution (vol%, bins: <20, 20-50, 50-100, 100-250, 250-500, >500 μm)
+    // Source: Graf (1993) NASA RP-1265, sample 10084
+    grainSize: [18, 23, 22, 20, 11, 6],
+    meanGrainSize: 70, // μm — Graf (1993)
+    refSample: "10084",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Heiken et al. (1991) Table 7.9; Papike et al. (1982) Table 4
+    modal: { aggl: 30, lithic: 20, mineral: 40, glass: 10 }
+  },
+  {
+    name: "Apollo 12", abbr: "A12",
+    site: "Oceanus Procellarum",
+    lat: -3.01, lon: -23.42,
+    type: "mare", terrane: "PKT",
+    // Bulk soil 12070 — low-Ti mare basalt
+    // Source: Heiken et al. (1991) Table 8.2; Meyer (2012) LSC 12070
+    comp: {
+      SiO2: 46.3, TiO2: 2.6, Al2O3: 12.9, FeO: 15.1,
+      MnO: 0.22, MgO: 9.3, CaO: 10.7, Na2O: 0.54,
+      K2O: 0.28, P2O5: 0.26, Cr2O3: 0.34
+    },
+    Th_ppm: 6.5,   // Source: Heiken et al. (1991) Table 8.8; KREEP influence
+    isFeO: 52,      // Source: Morris (1978); submature–mature
+    aggl_pct: 25,   // Source: McKay et al. (1974)
+    grainSize: [13, 18, 20, 23, 16, 10],
+    meanGrainSize: 100, // μm — Graf (1993)
+    refSample: "12070",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Heiken et al. (1991) Table 7.9; Papike et al. (1982) Table 4
+    modal: { aggl: 25, lithic: 25, mineral: 40, glass: 10 }
+  },
+  {
+    name: "Apollo 14", abbr: "A14",
+    site: "Fra Mauro Formation",
+    lat: -3.65, lon: -17.47,
+    type: "kreep", terrane: "PKT",
+    // Bulk soil 14163 — KREEP-rich Imbrium ejecta
+    // Source: Heiken et al. (1991) Table 8.3; Meyer (2012) LSC 14163
+    comp: {
+      SiO2: 48.1, TiO2: 1.6, Al2O3: 17.4, FeO: 10.4,
+      MnO: 0.14, MgO: 9.4, CaO: 10.7, Na2O: 0.70,
+      K2O: 0.55, P2O5: 0.51, Cr2O3: 0.18
+    },
+    Th_ppm: 13.0,   // Source: Heiken et al. (1991) Table 8.8; highest KREEP
+    isFeO: 72,       // Source: Morris (1978); mature
+    aggl_pct: 30,    // Source: McKay et al. (1974)
+    grainSize: [15, 20, 22, 22, 13, 8],
+    meanGrainSize: 90, // μm — Graf (1993)
+    refSample: "14163",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Heiken et al. (1991) Table 7.9; Papike et al. (1982) Table 4
+    modal: { aggl: 30, lithic: 25, mineral: 35, glass: 10 }
+  },
+  {
+    name: "Apollo 15", abbr: "A15",
+    site: "Hadley–Apennine",
+    lat: 26.13, lon: 3.63,
+    type: "mare", terrane: "PKT",
+    // Bulk soil 15271 — low-Ti basalt + KREEP influence at Imbrium rim
+    // Source: Heiken et al. (1991) Table 8.2; Meyer (2012) LSC 15271
+    comp: {
+      SiO2: 46.2, TiO2: 1.4, Al2O3: 15.0, FeO: 14.0,
+      MnO: 0.19, MgO: 10.6, CaO: 10.6, Na2O: 0.40,
+      K2O: 0.20, P2O5: 0.16, Cr2O3: 0.38
+    },
+    Th_ppm: 4.5,    // Source: Heiken et al. (1991) Table 8.8
+    isFeO: 55,       // Source: Morris (1978); submature
+    aggl_pct: 22,    // Source: McKay et al. (1974)
+    // Source: Graf (1993), sample 15271
+    grainSize: [14, 21, 22, 22, 14, 7],
+    meanGrainSize: 85, // μm — Graf (1993)
+    refSample: "15271",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Heiken et al. (1991) Table 7.9; Papike et al. (1982) Table 4
+    modal: { aggl: 22, lithic: 25, mineral: 43, glass: 10 }
+  },
+  {
+    name: "Apollo 16", abbr: "A16",
+    site: "Descartes Highlands",
+    lat: -8.97, lon: 15.50,
+    type: "highland", terrane: "FHT",
+    // Bulk soil 64801 — ferroan anorthosite highland
+    // Source: Heiken et al. (1991) Table 8.4; Meyer (2012) LSC 64801
+    comp: {
+      SiO2: 45.0, TiO2: 0.55, Al2O3: 27.3, FeO: 5.1,
+      MnO: 0.065, MgO: 5.7, CaO: 15.7, Na2O: 0.46,
+      K2O: 0.10, P2O5: 0.11, Cr2O3: 0.10
+    },
+    Th_ppm: 1.8,    // Source: Heiken et al. (1991) Table 8.8
+    isFeO: 85,       // Source: Morris (1978); very mature highland soil
+    aggl_pct: 35,    // Source: McKay et al. (1974); mature highland has high aggl.
+    // Source: Graf (1993), sample 64801 — highland soils slightly coarser
+    grainSize: [12, 17, 19, 23, 18, 11],
+    meanGrainSize: 105, // μm — Graf (1993)
+    refSample: "64801",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Heiken et al. (1991) Table 7.9; Papike et al. (1982) Table 4
+    modal: { aggl: 35, lithic: 20, mineral: 38, glass: 7 }
+  },
+  {
+    name: "Apollo 17", abbr: "A17",
+    site: "Taurus–Littrow",
+    lat: 20.19, lon: 30.77,
+    type: "mare", terrane: "FHT",
+    // Bulk soil 70181 — high-Ti basalt (valley floor)
+    // Source: Heiken et al. (1991) Table 8.2; Meyer (2012) LSC 70181
+    comp: {
+      SiO2: 40.4, TiO2: 9.0, Al2O3: 12.4, FeO: 17.2,
+      MnO: 0.23, MgO: 10.0, CaO: 10.4, Na2O: 0.35,
+      K2O: 0.09, P2O5: 0.05, Cr2O3: 0.42
+    },
+    Th_ppm: 1.5,    // Source: Heiken et al. (1991) Table 8.8
+    isFeO: 55,       // Source: Morris (1978); submature (recent exposure at Shorty crater)
+    aggl_pct: 25,    // Source: McKay et al. (1974)
+    grainSize: [19, 24, 21, 18, 12, 6],
+    meanGrainSize: 70, // μm — Graf (1993)
+    refSample: "70181",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Heiken et al. (1991) Table 7.9; Papike et al. (1982) Table 4
+    modal: { aggl: 25, lithic: 20, mineral: 40, glass: 15 }
+  },
+  {
+    name: "Luna 16", abbr: "L16",
+    site: "Mare Fecunditatis",
+    lat: -0.68, lon: 56.30,
+    type: "mare", terrane: "FHT",
+    // Bulk regolith — intermediate-Ti mare basalt
+    // Source: Heiken et al. (1991) Table 8.6; Papike et al. (1982)
+    comp: {
+      SiO2: 41.7, TiO2: 3.4, Al2O3: 15.3, FeO: 16.6,
+      MnO: 0.22, MgO: 8.8, CaO: 12.4, Na2O: 0.32,
+      K2O: 0.12, P2O5: 0.12, Cr2O3: 0.25
+    },
+    Th_ppm: 1.0,    // Source: Papike et al. (1982)
+    isFeO: 60,       // Source: estimated from maturity context; submature–mature
+    aggl_pct: 28,    // Source: McKay et al. (1991) general mare estimate
+    grainSize: [20, 25, 22, 18, 10, 5],
+    meanGrainSize: 65, // μm — Graf (1993), Luna 16 core
+    refSample: "L16 core",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Papike et al. (1982) Table 4; Heiken et al. (1991) Ch. 7
+    modal: { aggl: 28, lithic: 22, mineral: 40, glass: 10 }
+  },
+  {
+    name: "Luna 20", abbr: "L20",
+    site: "Apollonius Highlands",
+    lat: 3.53, lon: 56.55,
+    type: "highland", terrane: "FHT",
+    // Bulk regolith — highland anorthosite
+    // Source: Heiken et al. (1991) Table 8.6; Papike et al. (1982)
+    comp: {
+      SiO2: 45.4, TiO2: 0.5, Al2O3: 23.4, FeO: 7.4,
+      MnO: 0.10, MgO: 9.4, CaO: 13.3, Na2O: 0.40,
+      K2O: 0.05, P2O5: 0.06, Cr2O3: 0.15
+    },
+    Th_ppm: 0.9,    // Source: Papike et al. (1982)
+    isFeO: 70,       // Source: estimated; mature highland soil
+    aggl_pct: 32,    // Source: McKay et al. (1991) general highland estimate
+    grainSize: [13, 18, 20, 22, 16, 11],
+    meanGrainSize: 95, // μm — Graf (1993), highland slightly coarser
+    refSample: "L20 regolith",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Papike et al. (1982) Table 4; Heiken et al. (1991) Ch. 7
+    modal: { aggl: 32, lithic: 20, mineral: 40, glass: 8 }
+  },
+  {
+    name: "Luna 24", abbr: "L24",
+    site: "Mare Crisium",
+    lat: 12.75, lon: 62.20,
+    type: "mare", terrane: "FHT",
+    // Bulk regolith — very-low-Ti mare basalt
+    // Source: Heiken et al. (1991) Table 8.6; Papike et al. (1982)
+    comp: {
+      SiO2: 44.5, TiO2: 1.0, Al2O3: 13.0, FeO: 19.8,
+      MnO: 0.26, MgO: 10.9, CaO: 9.3, Na2O: 0.26,
+      K2O: 0.04, P2O5: 0.04, Cr2O3: 0.40
+    },
+    Th_ppm: 0.4,    // Source: Papike et al. (1982)
+    isFeO: 45,       // Source: estimated; submature (limited gardening time)
+    aggl_pct: 20,    // Source: McKay et al. (1991) general estimate
+    grainSize: [22, 26, 22, 17, 9, 4],
+    meanGrainSize: 55, // μm — Graf (1993), Luna 24 drill core
+    refSample: "L24 drill core",
+    // Modal abundance (vol%, 90–150 μm fraction)
+    // Source: Papike et al. (1982) Table 4; Heiken et al. (1991) Ch. 7
+    modal: { aggl: 20, lithic: 28, mineral: 42, glass: 10 }
+  }
+];
+
+/* ═══════════════════ MARE REGIONS (for geographic detection) ═══════════════════
+   Approximate lat/lon and radius for named maria — used to classify
+   whether a clicked point falls in mare or highland terrain.
+   NOT used for composition (that comes from SAMPLE_DB IDW). */
+const MARIA_REGIONS = [
+  { name: "Mare Imbrium",         lat:  33, lon: -16, r: 13 },
+  { name: "Mare Serenitatis",     lat:  28, lon:  18, r: 10 },
+  { name: "Mare Tranquillitatis", lat:   8, lon:  31, r: 11 },
+  { name: "Mare Fecunditatis",    lat:  -8, lon:  51, r:  9 },
+  { name: "Mare Crisium",         lat:  17, lon:  59, r:  8 },
+  { name: "Mare Nectaris",        lat: -15, lon:  35, r:  7 },
+  { name: "Mare Nubium",          lat: -21, lon: -17, r:  9 },
+  { name: "Mare Humorum",         lat: -24, lon: -39, r:  6 },
+  { name: "Oceanus Procellarum",  lat:  20, lon: -57, r: 16 },
+  { name: "Mare Frigoris",        lat:  56, lon:  -5, r:  7 },
+  { name: "Mare Vaporum",         lat:  13, lon:   4, r:  5 },
+  { name: "Mare Cognitum",        lat: -10, lon: -23, r:  5 },
+];
+
+/* ═══════════════════ TERRANE BOUNDARIES ═══════════════════
+   Procellarum KREEP Terrane (PKT) — rough polygon approximating the
+   Th > 3.5 ppm contour from Jolliff et al. (2000) Fig. 1.
+   Points are [lat, lon] vertices. */
+const PKT_BOUNDARY = [
+  // Source: Jolliff et al. (2000) Fig. 1, approximate Th > 3.5 ppm contour
+  [55, -70], [55, 5], [40, 15], [30, 10], [15, 5],
+  [0, -5], [-10, -5], [-25, -10], [-30, -30], [-25, -55],
+  [-10, -65], [10, -70], [30, -75], [45, -75], [55, -70]
+];
+
+/* SPA terrane — South Pole-Aitken basin, mostly on farside
+   Only the near-limb edge is visible; included for completeness.
+   Source: Jolliff et al. (2000); center ~53°S, 170°W */
+const SPA_BOUNDARY = [
+  [-30, 150], [-30, -150], [-75, -150], [-75, 150], [-30, 150]
+];
+
+/* Grain-size bin labels (Wentworth-scale, lunar adjusted) */
+const SIZE_LABELS = [
+  { l: "<20",     n: "dust" },
+  { l: "20–50",   n: "v.fine" },
+  { l: "50–100",  n: "fine" },
+  { l: "100–250", n: "medium" },
+  { l: "250–500", n: "coarse" },
+  { l: ">500",    n: "v.coarse" }
+];
+
+/* Bin centers for mean grain size calculation (μm) */
+const SIZE_BIN_CENTERS = [10, 35, 75, 175, 375, 700];
+
+/* Oxide display names and formulae */
+const OXIDE_DISPLAY = {
+  SiO2: "SiO\u2082", TiO2: "TiO\u2082", Al2O3: "Al\u2082O\u2083",
+  FeO: "FeO", MnO: "MnO", MgO: "MgO", CaO: "CaO",
+  Na2O: "Na\u2082O", K2O: "K\u2082O", P2O5: "P\u2082O\u2085", Cr2O3: "Cr\u2082O\u2083"
+};
+const OXIDE_NAMES = {
+  SiO2: "silica", TiO2: "titania", Al2O3: "alumina", FeO: "iron(II) oxide",
+  MnO: "manganese oxide", MgO: "periclase", CaO: "lime", Na2O: "soda",
+  K2O: "potash", P2O5: "phosphorus pentoxide", Cr2O3: "chromia"
+};
+
+/* Major oxides to display (in preferred order) */
+const DISPLAY_OXIDES = [
+  "SiO2","Al2O3","FeO","CaO","MgO","TiO2","Na2O","K2O","MnO","Cr2O3","P2O5"
+];
+
+/* ═══════════════════ GEOMETRY HELPERS ═══════════════════
+   Orthographic projection of the near side — preserved from original. */
+const R_DEG = 90;
+function pixelToLatLon(px, py, cx, cy, R) {
+  const x = (px - cx) / R;
+  const y = -(py - cy) / R;
+  const rho = Math.sqrt(x*x + y*y);
+  if (rho > 1) return null;
+  const c = Math.asin(rho);
+  const lat = (rho === 0) ? 0 : Math.asin(y * Math.sin(c) / rho) * 180/Math.PI;
+  const lon = Math.atan2(x * Math.sin(c), rho * Math.cos(c)) * 180/Math.PI;
+  return { lat, lon };
+}
+function latLonToPixel(lat, lon, cx, cy, R) {
+  const la = lat*Math.PI/180, lo = lon*Math.PI/180;
+  const x =  Math.cos(la) * Math.sin(lo);
+  const y =  Math.sin(la);
+  return { px: cx + x*R, py: cy - y*R };
+}
+function angDist(lat1, lon1, lat2, lon2) {
+  const toR = Math.PI/180;
+  const dLat = (lat2-lat1)*toR, dLon = (lon2-lon1)*toR;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLon/2)**2;
+  return 2*Math.asin(Math.sqrt(a)) * 180/Math.PI;
+}
+
+/* ═══════════════════ TERRANE & LOCALITY CLASSIFICATION ═══════════════════ */
+
+/* Ray-casting point-in-polygon for lat/lon polygons */
+function pointInPolygon(lat, lon, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const yi = polygon[i][0], xi = polygon[i][1];
+    const yj = polygon[j][0], xj = polygon[j][1];
+    if (((yi > lat) !== (yj > lat)) &&
+        (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/* Classify the geochemical terrane at a given lat/lon.
+   Source: Jolliff et al. (2000) three-terrane model. */
+function classifyTerrane(lat, lon) {
+  if (pointInPolygon(lat, lon, PKT_BOUNDARY)) return "PKT";
+  if (pointInPolygon(lat, lon, SPA_BOUNDARY)) return "SPA";
+  return "FHT";
+}
+
+/* Determine whether a point is in a mare or highland region,
+   using the geometric proximity model. Returns 0..1 "mareness". */
+function mareness(lat, lon) {
+  let best = 0;
+  for (const m of MARIA_REGIONS) {
+    const d = angDist(lat, lon, m.lat, m.lon);
+    if (d < m.r) {
+      const v = 1 - (d / m.r);
+      if (v > best) best = v;
+    } else if (d < m.r * 1.4) {
+      const v = 0.3 * (1 - (d - m.r) / (m.r * 0.4));
+      if (v > best) best = v;
+    }
+  }
+  return best;
+}
+
+/* Return the nearest named mare region */
+function nearestMareRegion(lat, lon) {
+  let best = null, bestD = Infinity;
+  for (const m of MARIA_REGIONS) {
+    const d = angDist(lat, lon, m.lat, m.lon);
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  return { mare: best, dist: bestD };
+}
+
+/* Classify the locality type: mare, highland, or margin */
+function classifyLocality(lat, lon) {
+  const mv = mareness(lat, lon);
+  if (mv > 0.5) return "mare";
+  if (mv > 0.15) return "margin";
+  return "highland";
+}
+
+/* TiO₂ classification for mare basalts.
+   Source: Neal & Taylor (1992) classification thresholds. */
+function classifyTi(tio2) {
+  if (tio2 > 6) return "High-Ti";      // >6 wt% TiO₂
+  if (tio2 > 1) return "Low-Ti";       // 1–6 wt% TiO₂
+  return "Very-Low-Ti";                 // <1 wt% TiO₂
+}
+
+/* Weighted standard deviation for IDW uncertainty estimation.
+   σ = sqrt( Σ wᵢ(xᵢ − x̄)² / Σ wᵢ )  — inter-site dispersion measure. */
+function weightedStdDev(nearest, accessor, mean, totalW) {
+  const v = nearest.reduce((s, x) => s + x.weight * Math.pow(accessor(x) - mean, 2), 0) / totalW;
+  return Math.sqrt(v);
+}
+
+/* ═══════════════════ IDW INTERPOLATION ═══════════════════
+   Inverse-distance-weighted interpolation from sample sites.
+   Uses 1/d² weighting with a soft penalty for cross-type samples
+   (3× distance inflation when sample type doesn't match locality type).
+   Source: standard IDW methodology; cross-boundary penalty is a
+   conservative design choice to prevent mare–highland blending. */
+
+function idwInterpolate(lat, lon) {
+  const locType = classifyLocality(lat, lon);
+  const N = 5; // number of nearest sites to use
+
+  // Compute distances and apply cross-type penalty
+  const sites = SAMPLE_DB.map(s => {
+    let d = angDist(lat, lon, s.lat, s.lon);
+    // Prevent division by zero for clicks very near a sample site
+    d = Math.max(d, 0.1);
+
+    // Cross-type penalty: inflate distance 3× for mismatched types
+    // "margin" type blends freely with both mare and highland
+    const sType = (s.type === "kreep") ? "highland" : s.type;
+    if (locType === "mare" && sType === "highland") d *= 3;
+    if (locType === "highland" && sType === "mare") d *= 3;
+
+    return { site: s, dist: d, weight: 1 / (d * d) };
+  });
+
+  // Sort by effective distance, take top N
+  sites.sort((a, b) => a.dist - b.dist);
+  const nearest = sites.slice(0, N);
+  const totalW = nearest.reduce((s, x) => s + x.weight, 0);
+
+  // Interpolate composition
+  const comp = {};
+  const compSigma = {};
+  for (const ox of DISPLAY_OXIDES) {
+    comp[ox] = nearest.reduce((s, x) => s + x.weight * x.site.comp[ox], 0) / totalW;
+    compSigma[ox] = weightedStdDev(nearest, x => x.site.comp[ox], comp[ox], totalW);
+  }
+
+  // Interpolate Th
+  const Th = nearest.reduce((s, x) => s + x.weight * x.site.Th_ppm, 0) / totalW;
+  const ThSigma = weightedStdDev(nearest, x => x.site.Th_ppm, Th, totalW);
+
+  // Interpolate maturity parameters
+  const isFeO = nearest.reduce((s, x) => s + x.weight * x.site.isFeO, 0) / totalW;
+  const isFeOSigma = weightedStdDev(nearest, x => x.site.isFeO, isFeO, totalW);
+  const aggl = nearest.reduce((s, x) => s + x.weight * x.site.aggl_pct, 0) / totalW;
+  const agglSigma = weightedStdDev(nearest, x => x.site.aggl_pct, aggl, totalW);
+
+  // Interpolate grain-size distribution
+  const grainSize = [0, 0, 0, 0, 0, 0];
+  for (let i = 0; i < 6; i++) {
+    grainSize[i] = nearest.reduce((s, x) => s + x.weight * x.site.grainSize[i], 0) / totalW;
+  }
+  // Renormalize to 100%
+  const gsSum = grainSize.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < 6; i++) grainSize[i] = grainSize[i] * 100 / gsSum;
+
+  // Interpolate mean grain size
+  const meanGS = nearest.reduce((s, x) => s + x.weight * x.site.meanGrainSize, 0) / totalW;
+  const meanGSSigma = weightedStdDev(nearest, x => x.site.meanGrainSize, meanGS, totalW);
+
+  // Interpolate modal abundances (particle types)
+  const modal = { aggl: 0, lithic: 0, mineral: 0, glass: 0 };
+  for (const key of ['aggl', 'lithic', 'mineral', 'glass']) {
+    modal[key] = nearest.reduce((s, x) => s + x.weight * x.site.modal[key], 0) / totalW;
+  }
+  // Renormalize to 100%
+  const modalSum = modal.aggl + modal.lithic + modal.mineral + modal.glass;
+  for (const key of ['aggl', 'lithic', 'mineral', 'glass']) modal[key] = modal[key] * 100 / modalSum;
+
+  // Provenance info (which sites contributed, with weights)
+  const provenance = nearest.map(x => ({
+    name: x.site.name,
+    sample: x.site.refSample,
+    dist: x.dist,
+    weight: (x.weight / totalW * 100)
+  }));
+
+  return { comp, compSigma, Th, ThSigma, isFeO, isFeOSigma, aggl, agglSigma, grainSize, meanGS, meanGSSigma, modal, provenance, locType };
+}
+
+/* ═══════════════════ DEPTH-DEPENDENT MATURITY MODEL ═══════════════════
+   Maturity (Is/FeO) and agglutinate fraction decrease with depth due to
+   decreasing space-weathering exposure.
+
+   Model: exponential decay calibrated to Apollo core-tube data.
+   - Surface (0 cm): maximum Is/FeO and agglutinate fraction
+   - Decay constant k ≈ 0.04 cm⁻¹
+
+   Calibration sources:
+   - Morris (1978) — Is/FeO compilation from Apollo soils at various depths
+   - McKay et al. (1991) Lunar Sourcebook Ch. 7 — agglutinate depth profiles
+   - Apollo 15 deep drill core (15001–15006, 240 cm): Is/FeO drops from
+     ~60 at surface to ~15 at depth (Morris 1978, Fig. 5)
+   - Apollo 16 cores (60001–60004): similar exponential profile
+
+   Grain-size distribution is treated as approximately depth-invariant
+   in the 0–30 cm gardened zone.
+   Source: McKay et al. (1991), "no systematic grain-size trend with depth
+   in the upper regolith" */
+
+const MATURITY_DECAY_K = 0.04;
+// Source: fitted to Apollo 15 deep drill Is/FeO profile (Morris 1978 Fig. 5)
+// At d=0: 100% of surface; d=10cm: ~67%; d=25cm: ~37%; d=50cm: ~14%
+
+/* Maturity classification thresholds.
+   Source: Morris (1978), LPSC IX, p. 2289 */
+function maturityClass(isFeO) {
+  if (isFeO >= 60) return "Mature";
+  if (isFeO >= 30) return "Submature";
+  return "Immature";
+}
+
+function maturityCSSClass(isFeO) {
+  if (isFeO >= 60) return "mature";
+  if (isFeO >= 30) return "submature";
+  return "immature";
+}
+
+/* Is/FeO at a given depth (cm) */
+function isFeOAtDepth(surfaceIsFeO, d) {
+  return surfaceIsFeO * Math.exp(-MATURITY_DECAY_K * d);
+}
+
+/* Agglutinate % at a given depth (cm) */
+function agglAtDepth(surfaceAggl, d) {
+  return surfaceAggl * Math.exp(-MATURITY_DECAY_K * d);
+}
+
+/* Column-average Is/FeO over [0, D] by trapezoidal integration */
+function avgIsFeOOverDepth(surfaceIsFeO, D) {
+  if (D <= 0) return surfaceIsFeO;
+  const steps = 24;
+  const dx = D / steps;
+  let sum = 0;
+  for (let i = 0; i <= steps; i++) {
+    const d = i * dx;
+    const w = (i === 0 || i === steps) ? 0.5 : 1;
+    sum += isFeOAtDepth(surfaceIsFeO, d) * w;
+  }
+  return sum / steps;
+}
+
+/* Column-average agglutinate % over [0, D] */
+function avgAgglOverDepth(surfaceAggl, D) {
+  if (D <= 0) return surfaceAggl;
+  const steps = 24;
+  const dx = D / steps;
+  let sum = 0;
+  for (let i = 0; i <= steps; i++) {
+    const d = i * dx;
+    const w = (i === 0 || i === steps) ? 0.5 : 1;
+    sum += agglAtDepth(surfaceAggl, d) * w;
+  }
+  return sum / steps;
+}
+
+/* Mean grain size from a bin distribution */
+function meanGrainSize(dist) {
+  let num = 0, den = 0;
+  for (let i = 0; i < dist.length; i++) {
+    num += dist[i] * SIZE_BIN_CENTERS[i];
+    den += dist[i];
+  }
+  return num / den;
+}
+
+/* ═══════════════════ DEPTH-DEPENDENT GRAIN-SIZE MODEL ═══════════════════
+   Agglutinates are preferentially concentrated in the finer size fractions
+   (<90 μm). As agglutinate content decreases with depth (due to reduced
+   space-weathering exposure), the fine fraction shrinks and coarser
+   fractions grow proportionally.
+
+   Source: McKay et al. (1974) "Grain size and the evolution of lunar soils",
+     LPSC V, 887–906 — established that agglutinates dominate the <90 μm
+     fraction (~60% of agglutinate mass is in the sub-90 μm bins).
+   Source: Heiken et al. (1991) Lunar Sourcebook Ch. 7, pp. 296–300 —
+     agglutinate grain-size partitioning across Wentworth fractions.
+
+   Agglutinate contribution weights per bin (fraction of agglutinate mass):
+     bin 0 (<20 μm):    0.40 — dust-sized agglutinate fragments
+     bin 1 (20–50 μm):  0.40 — very fine agglutinate glass-bonded aggregates
+     bin 2 (50–100 μm): 0.20 — fine agglutinate particles
+     bins 3–5 (>100 μm): 0   — agglutinates rarely exceed ~100 μm
+   Source: McKay et al. (1974) Fig. 3; Heiken et al. (1991) Table 7.10 */
+
+const AGGL_BIN_WEIGHTS = [0.40, 0.40, 0.20, 0, 0, 0];
+// Source: McKay et al. (1974) Fig. 3 — agglutinate size partitioning
+
+/* Grain-size distribution at a given depth (cm).
+   Redistributes agglutinate-associated fine material to coarser bins
+   as agglutinate fraction decreases with depth. */
+function grainSizeAtDepth(surfaceGS, surfaceAggl, depth) {
+  if (depth <= 0 || surfaceAggl <= 0) return surfaceGS.slice();
+
+  const agglFrac = surfaceAggl / 100; // convert % to fraction
+  const agglAtD = agglAtDepth(surfaceAggl, depth) / 100;
+  const agglLoss = agglFrac - agglAtD; // fraction of total soil lost from agglutinates
+  if (agglLoss <= 0) return surfaceGS.slice();
+
+  const gs = surfaceGS.slice();
+
+  // Remove agglutinate-associated material from fine bins
+  let totalRemoved = 0;
+  for (let i = 0; i < 3; i++) {
+    const removed = gs[i] * agglLoss * AGGL_BIN_WEIGHTS[i];
+    gs[i] -= removed;
+    totalRemoved += removed;
+  }
+
+  // Redistribute removed material proportionally into coarser bins (3–5)
+  const coarseSum = gs[3] + gs[4] + gs[5];
+  if (coarseSum > 0 && totalRemoved > 0) {
+    for (let i = 3; i < 6; i++) {
+      gs[i] += totalRemoved * (gs[i] / coarseSum);
+    }
+  }
+
+  // Renormalize to 100%
+  const sum = gs.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < 6; i++) gs[i] = gs[i] * 100 / sum;
+
+  return gs;
+}
+
+/* Column-average grain-size distribution over [0, D] by trapezoidal integration.
+   Returns a 6-element array (vol%) representing the depth-averaged bin distribution. */
+function avgGrainSizeOverDepth(surfaceGS, surfaceAggl, D) {
+  if (D <= 0) return surfaceGS.slice();
+  const steps = 24;
+  const dx = D / steps;
+  const avg = [0, 0, 0, 0, 0, 0];
+  for (let i = 0; i <= steps; i++) {
+    const d = i * dx;
+    const w = (i === 0 || i === steps) ? 0.5 : 1;
+    const gsAtD = grainSizeAtDepth(surfaceGS, surfaceAggl, d);
+    for (let j = 0; j < 6; j++) avg[j] += gsAtD[j] * w;
+  }
+  for (let j = 0; j < 6; j++) avg[j] /= steps;
+  // Renormalize
+  const sum = avg.reduce((a, b) => a + b, 0);
+  for (let j = 0; j < 6; j++) avg[j] = avg[j] * 100 / sum;
+  return avg;
+}
+
+/* ═══════════════════ DEPTH-DEPENDENT MODAL ABUNDANCES ═══════════════════
+   Agglutinate fraction decreases with depth (same decay as Is/FeO).
+   Glass is approximately depth-invariant (impact/volcanic origin, not
+   maturity-dependent). Lost agglutinate material redistributes into
+   lithic + mineral fragments proportionally.
+   Source: McKay et al. (1974); Heiken et al. (1991) Ch. 7, pp. 296–300 */
+
+function modalAtDepth(surfaceModal, surfaceAggl, depth) {
+  if (depth <= 0 || surfaceAggl <= 0) return { ...surfaceModal };
+  const agglAtD = agglAtDepth(surfaceAggl, depth);
+  // Scale agglutinate fraction by the same ratio
+  const agglRatio = agglAtD / surfaceAggl;
+  const newAggl = surfaceModal.aggl * agglRatio;
+  const agglLost = surfaceModal.aggl - newAggl;
+  // Glass stays constant; redistribute lost aggl into lithic + mineral
+  const lmSum = surfaceModal.lithic + surfaceModal.mineral;
+  const m = {
+    aggl: newAggl,
+    lithic: surfaceModal.lithic + (lmSum > 0 ? agglLost * (surfaceModal.lithic / lmSum) : 0),
+    mineral: surfaceModal.mineral + (lmSum > 0 ? agglLost * (surfaceModal.mineral / lmSum) : 0),
+    glass: surfaceModal.glass
+  };
+  // Renormalize to 100%
+  const sum = m.aggl + m.lithic + m.mineral + m.glass;
+  for (const k of ['aggl', 'lithic', 'mineral', 'glass']) m[k] = m[k] * 100 / sum;
+  return m;
+}
+
+/* Column-average modal abundances over [0, D] by trapezoidal integration */
+function avgModalOverDepth(surfaceModal, surfaceAggl, D) {
+  if (D <= 0) return { ...surfaceModal };
+  const steps = 24;
+  const dx = D / steps;
+  const avg = { aggl: 0, lithic: 0, mineral: 0, glass: 0 };
+  for (let i = 0; i <= steps; i++) {
+    const d = i * dx;
+    const w = (i === 0 || i === steps) ? 0.5 : 1;
+    const mAtD = modalAtDepth(surfaceModal, surfaceAggl, d);
+    for (const k of ['aggl', 'lithic', 'mineral', 'glass']) avg[k] += mAtD[k] * w;
+  }
+  for (const k of ['aggl', 'lithic', 'mineral', 'glass']) avg[k] /= steps;
+  // Renormalize
+  const sum = avg.aggl + avg.lithic + avg.mineral + avg.glass;
+  for (const k of ['aggl', 'lithic', 'mineral', 'glass']) avg[k] = avg[k] * 100 / sum;
+  return avg;
+}
+
+/* Generate a locality label from coordinates */
+function localityLabel(lat, lon, locType) {
+  const { mare, dist } = nearestMareRegion(lat, lon);
+  if (locType === "mare" && mare && dist < mare.r * 1.1) {
+    return { name: mare.name, type: "Mare basin" };
+  }
+  if (locType === "margin" && mare) {
+    return { name: "Near " + mare.name, type: "Mare margin" };
+  }
+  // Highland — find nearest named region
+  // Check if near any of the sample sites
+  let nearestSite = null, nearestD = Infinity;
+  for (const s of SAMPLE_DB) {
+    if (s.type === "highland" || s.type === "kreep") {
+      const d = angDist(lat, lon, s.lat, s.lon);
+      if (d < nearestD) { nearestD = d; nearestSite = s; }
+    }
+  }
+  if (nearestSite && nearestD < 15) {
+    return { name: nearestSite.site, type: "Highland terrain" };
+  }
+  // Generic highland
+  if (lat > 30) return { name: "Northern Highlands", type: "Highland terrain" };
+  if (lat < -30) return { name: "Southern Highlands", type: "Highland terrain" };
+  return { name: "Central Highlands", type: "Highland terrain" };
+}
+
+/* Terrane display names */
+const TERRANE_DISPLAY = {
+  PKT: "Procellarum KREEP Terrane",
+  FHT: "Feldspathic Highlands Terrane",
+  SPA: "South Pole–Aitken Terrane"
+};
+
+/* ═══════════════════ MOON RENDERING ═══════════════════ */
+const canvas = document.getElementById('moonCanvas');
+const ctx = canvas.getContext('2d');
+const CW = canvas.width, CH = canvas.height;
+const CX = CW/2, CY = CH/2, R = CW*0.47;
+
+let selected = null;
+
+/* Pseudo-random for crater placement (seeded) */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ─── Load NASA LRO moon mosaic ─── */
+const moonImg = new Image();
+let moonImgReady = false;
+moonImg.onload = () => { moonImgReady = true; drawMoon(); };
+moonImg.onerror = () => { console.warn("Moon image failed to load; using fallback."); drawMoon(); };
+moonImg.src = "moon_nearside.jpg";
+
+function drawMoon() {
+  // Clear
+  ctx.fillStyle = '#f4efe6';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // ═══ NASA LRO photomosaic ═══
+  if (moonImgReady) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, R, 0, Math.PI*2);
+    ctx.clip();
+    const size = R * 2;
+    ctx.drawImage(moonImg, CX - R, CY - R, size, size);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#2a2620';
+    ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(244,239,230,0.5)';
+    ctx.font = "400 14px 'EB Garamond', serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Loading LRO mosaic\u2026', CX, CY);
+  }
+
+  // Graticule
+  ctx.strokeStyle = 'rgba(244,239,230,0.18)';
+  ctx.lineWidth = 0.6;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI*2); ctx.clip();
+  for (let lat = -60; lat <= 60; lat += 30) {
+    ctx.beginPath();
+    for (let lon = -90; lon <= 90; lon += 2) {
+      const p = latLonToPixel(lat, lon, CX, CY, R);
+      if (lon === -90) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+    }
+    ctx.stroke();
+  }
+  for (let lon = -60; lon <= 60; lon += 30) {
+    ctx.beginPath();
+    for (let lat = -90; lat <= 90; lat += 2) {
+      const p = latLonToPixel(lat, lon, CX, CY, R);
+      if (lat === -90) ctx.moveTo(p.px, p.py); else ctx.lineTo(p.px, p.py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Sample site markers
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI*2); ctx.clip();
+  for (const site of SAMPLE_DB) {
+    const p = latLonToPixel(site.lat, site.lon, CX, CY, R);
+    const dx = p.px - CX, dy = p.py - CY;
+    if (Math.sqrt(dx*dx + dy*dy) < R - 5) {
+      // Diamond marker
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(p.px, p.py - 8);
+      ctx.lineTo(p.px + 6, p.py);
+      ctx.lineTo(p.px, p.py + 8);
+      ctx.lineTo(p.px - 6, p.py);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // Abbreviated label
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.lineWidth = 3;
+      ctx.font = "600 11px 'JetBrains Mono', monospace";
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.strokeText(site.abbr, p.px + 10, p.py);
+      ctx.fillText(site.abbr, p.px + 10, p.py);
+    }
+  }
+  ctx.restore();
+
+  // Outer ring
+  ctx.strokeStyle = '#1a1612';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI*2); ctx.stroke();
+
+  // Compass marks
+  ctx.fillStyle = '#1a1612';
+  ctx.font = "500 11px 'JetBrains Mono', monospace";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('N', CX, CY - R - 14);
+  ctx.fillText('S', CX, CY + R + 14);
+  ctx.fillText('W', CX - R - 14, CY);
+  ctx.fillText('E', CX + R + 14, CY);
+
+  // Selection marker
+  if (selected) {
+    const p = latLonToPixel(selected.lat, selected.lon, CX, CY, R);
+    ctx.strokeStyle = '#8b2e2e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(p.px, p.py, 14, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p.px-22, p.py); ctx.lineTo(p.px-16, p.py);
+    ctx.moveTo(p.px+16, p.py); ctx.lineTo(p.px+22, p.py);
+    ctx.moveTo(p.px, p.py-22); ctx.lineTo(p.px, p.py-16);
+    ctx.moveTo(p.px, p.py+16); ctx.lineTo(p.px, p.py+22);
+    ctx.stroke();
+    ctx.fillStyle = '#8b2e2e';
+    ctx.beginPath(); ctx.arc(p.px, p.py, 2.5, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+/* ═══════════════════ INTERACTION ═══════════════════ */
+function getMousePos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = canvas.width / rect.width;
+  const sy = canvas.height / rect.height;
+  return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  const { x, y } = getMousePos(e);
+  const ll = pixelToLatLon(x, y, CX, CY, R);
+  const readout = document.getElementById('coordReadout');
+  if (ll) {
+    const latStr = (ll.lat >= 0 ? '+' : '') + ll.lat.toFixed(2) + '\u00B0';
+    const lonStr = (ll.lon >= 0 ? '+' : '') + ll.lon.toFixed(2) + '\u00B0';
+    readout.textContent = `LAT ${latStr} \u00B7 LON ${lonStr}`;
+  } else {
+    readout.textContent = 'LAT \u2014\u2014\u00B7\u2014\u2014 \u00B7 LON \u2014\u2014\u00B7\u2014\u2014';
+  }
+});
+
+canvas.addEventListener('click', (e) => {
+  const { x, y } = getMousePos(e);
+  const ll = pixelToLatLon(x, y, CX, CY, R);
+  if (!ll) return;
+  selected = { lat: ll.lat, lon: ll.lon };
+  document.getElementById('manualLat').value = ll.lat.toFixed(2);
+  document.getElementById('manualLon').value = ll.lon.toFixed(2);
+  document.getElementById('coordErr').textContent = '';
+  drawMoon();
+  updateResults();
+});
+
+/* ═══════════════════ MANUAL COORDINATE ENTRY ═══════════════════ */
+function goToManualCoords() {
+  const errEl = document.getElementById('coordErr');
+  const latVal = parseFloat(document.getElementById('manualLat').value);
+  const lonVal = parseFloat(document.getElementById('manualLon').value);
+  if (isNaN(latVal) || isNaN(lonVal)) {
+    errEl.textContent = 'Enter numeric lat/lon';
+    return;
+  }
+  if (latVal < -90 || latVal > 90) {
+    errEl.textContent = 'Lat must be \u201390\u00B0 to +90\u00B0';
+    return;
+  }
+  if (lonVal < -180 || lonVal > 180) {
+    errEl.textContent = 'Lon must be \u2013180\u00B0 to +180\u00B0';
+    return;
+  }
+  // Check if point is on the visible nearside disc (|lon| <= ~90°)
+  if (Math.abs(lonVal) > 90) {
+    errEl.textContent = 'Farside — not visible on nearside map';
+    return;
+  }
+  errEl.textContent = '';
+  selected = { lat: latVal, lon: lonVal };
+  drawMoon();
+  updateResults();
+}
+
+document.getElementById('manualGoBtn').addEventListener('click', goToManualCoords);
+// Allow Enter key in either input field
+document.getElementById('manualLat').addEventListener('keydown', (e) => { if (e.key === 'Enter') goToManualCoords(); });
+document.getElementById('manualLon').addEventListener('keydown', (e) => { if (e.key === 'Enter') goToManualCoords(); });
+
+/* ═══════════════════ TAB SWITCHING ═══════════════════ */
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-' + tabName).classList.add('active');
+}
+
+/* ═══════════════════ UI RENDER ═══════════════════ */
+const depthSlider = document.getElementById('depthSlider');
+const depthValue = document.getElementById('depthValue');
+
+depthSlider.addEventListener('input', () => {
+  depthValue.innerHTML = parseFloat(depthSlider.value).toFixed(1) + '<span class="unit">cm</span>';
+  if (selected) updateResults();
+});
+
+function updateResults() {
+  const body = document.getElementById('resultsBody');
+  if (!selected) return;
+  const D = parseFloat(depthSlider.value);
+
+  // IDW interpolation from sample database
+  const result = idwInterpolate(selected.lat, selected.lon);
+  const { comp, compSigma, Th, ThSigma, isFeO, isFeOSigma, aggl, agglSigma, grainSize, meanGS, meanGSSigma, modal, provenance, locType } = result;
+
+  // Terrane classification
+  const terrane = classifyTerrane(selected.lat, selected.lon);
+
+  // Locality label
+  const loc = localityLabel(selected.lat, selected.lon, locType);
+
+  // Ti classification for mare
+  let tiClass = "";
+  if (locType === "mare" || locType === "margin") {
+    tiClass = classifyTi(comp.TiO2);
+  }
+
+  // Depth-averaged maturity
+  const avgIsFeO = avgIsFeOOverDepth(isFeO, D);
+  const avgAggl = avgAgglOverDepth(aggl, D);
+  // Depth-averaged sigmas — exponential decay is multiplicative, so sigma
+  // passes through the same integration (Morris 1978; see Methodology § V.f)
+  const avgIsFeOSigma = avgIsFeOOverDepth(isFeOSigma, D);
+  const avgAgglSigma = avgAgglOverDepth(agglSigma, D);
+
+  // Depth-adjusted grain-size distribution (agglutinate-linked shift)
+  const gsAtDepth = avgGrainSizeOverDepth(grainSize, aggl, D);
+  const meanGSAtDepth = meanGrainSize(gsAtDepth);
+
+  // Depth-averaged modal abundances (particle types)
+  const avgModal = avgModalOverDepth(modal, aggl, D);
+
+  // Coordinates
+  const latStr = (selected.lat >= 0 ? '+' : '') + selected.lat.toFixed(2) + '\u00B0';
+  const lonStr = (selected.lon >= 0 ? '+' : '') + selected.lon.toFixed(2) + '\u00B0';
+
+  // Build composition bars
+  const compBars = DISPLAY_OXIDES.map(ox => {
+    const v = comp[ox];
+    const isKey = (ox === "FeO" || ox === "Al2O3" || ox === "TiO2");
+    return `
+    <div class="bar-row">
+      <div><span class="name">${OXIDE_DISPLAY[ox]}</span><span class="formula">${OXIDE_NAMES[ox]}</span></div>
+      <div class="bar-track"><div class="bar-fill ${isKey ? 'accent' : ''}" style="width:${Math.min(100, v * 3)}%"></div></div>
+      <div class="bar-val">${v.toFixed(2)}<span class="sigma"> \u00b1${compSigma[ox].toFixed(2)}</span>%</div>
+    </div>`;
+  }).join('');
+
+  // Grain-size histogram (depth-adjusted)
+  const maxSize = Math.max(...gsAtDepth);
+  const sizeBars = gsAtDepth.map(v =>
+    `<div class="size-bar" style="height:${(v / maxSize) * 100}%" data-val="${v.toFixed(1)}"></div>`
+  ).join('');
+  const sizeLabels = SIZE_LABELS.map(s =>
+    `<div>${s.l}\u03BCm<small>${s.n}</small></div>`).join('');
+
+  // Terrane + type descriptor
+  const terraneLabel = TERRANE_DISPLAY[terrane] || terrane;
+  let typeDesc = loc.type;
+  if (locType === "mare" && tiClass) {
+    typeDesc += ` \u00B7 ${tiClass} basaltic regolith`;
+  } else if (locType === "highland") {
+    typeDesc += " \u00B7 anorthositic regolith";
+  } else if (locType === "margin") {
+    typeDesc += " \u00B7 mixed regolith";
+  }
+
+  // Maturity class
+  const matClass = maturityClass(avgIsFeO);
+  const matCSS = maturityCSSClass(avgIsFeO);
+
+  // Provenance HTML
+  const provHTML = provenance.map(p =>
+    `<div class="provenance-site">
+      <span>${p.name} (${p.sample})</span>
+      <span class="weight">${p.weight.toFixed(1)}%</span>
+    </div>`
+  ).join('');
+
+  body.innerHTML = `
+    <div class="region-name">${loc.name}</div>
+    <div class="region-type">${typeDesc}</div>
+    <div class="terrane-badge">${terrane} \u2014 ${terraneLabel}</div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="lbl">Coordinates</div>
+        <div class="val" style="font-size:15px;font-family:'JetBrains Mono',monospace;font-weight:400">${latStr}<br>${lonStr}</div>
+      </div>
+      <div class="stat-box">
+        <div class="lbl">Column Depth</div>
+        <div class="val">0 \u2013 ${D.toFixed(1)}<span class="unit"> cm</span></div>
+      </div>
+    </div>
+
+    <h3 class="subhead"><span>Bulk Composition (wt %)</span><span class="roman">iii.a</span></h3>
+    ${compBars}
+    <div class="bar-row" style="margin-top:4px;border-top:1px dashed var(--rule);padding-top:6px">
+      <div><span class="name">Th</span><span class="formula">thorium</span></div>
+      <div class="bar-track"><div class="bar-fill accent" style="width:${Math.min(100, Th * 5)}%"></div></div>
+      <div class="bar-val">${Th.toFixed(1)}<span class="sigma"> \u00b1${ThSigma.toFixed(1)}</span> <span style="font-size:9px;color:var(--ink-soft)">ppm</span></div>
+    </div>
+
+    <h3 class="subhead"><span>Maturity &amp; Depth Evolution</span><span class="roman">iii.b</span></h3>
+    <div class="maturity-row">
+      <div class="stat-box">
+        <div class="lbl">I<sub>s</sub>/FeO (column avg)</div>
+        <div class="val">${avgIsFeO.toFixed(0)}<span class="sigma"> \u00b1${avgIsFeOSigma.toFixed(0)}</span></div>
+        <div class="maturity-bar-track">
+          <div class="maturity-bar-fill ${matCSS}" style="width:${Math.min(100, avgIsFeO)}%"></div>
+        </div>
+        <div style="font-size:10px;margin-top:4px;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:0.1em">${matClass.toUpperCase()}</div>
+      </div>
+      <div class="stat-box">
+        <div class="lbl">Agglutinate (column avg)</div>
+        <div class="val">${avgAggl.toFixed(1)}<span class="sigma"> \u00b1${avgAgglSigma.toFixed(1)}</span><span class="unit"> %</span></div>
+        <div class="maturity-bar-track">
+          <div class="maturity-bar-fill ${matCSS}" style="width:${Math.min(100, avgAggl * 2)}%"></div>
+        </div>
+        <div style="font-size:10px;margin-top:4px;font-family:'JetBrains Mono',monospace;color:var(--ink-soft)">surface: ${aggl.toFixed(1)}%</div>
+      </div>
+    </div>
+    <div class="maturity-row" style="margin-top:8px">
+      <div class="stat-box">
+        <div class="lbl">I<sub>s</sub>/FeO (surface)</div>
+        <div class="val">${isFeO.toFixed(0)}<span class="sigma"> \u00b1${isFeOSigma.toFixed(0)}</span></div>
+        <div style="font-size:10px;margin-top:4px;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:0.1em">${maturityClass(isFeO).toUpperCase()}</div>
+      </div>
+      <div class="stat-box">
+        <div class="lbl">I<sub>s</sub>/FeO at ${D.toFixed(0)} cm</div>
+        <div class="val">${isFeOAtDepth(isFeO, D).toFixed(0)}</div>
+        <div style="font-size:10px;margin-top:4px;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:0.1em">${maturityClass(isFeOAtDepth(isFeO, D)).toUpperCase()}</div>
+      </div>
+    </div>
+    <div class="depth-note">
+      Major-oxide composition is approximately depth-invariant in the gardened zone (0\u201350 cm). Maturity parameters (I<sub>s</sub>/FeO, agglutinate fraction) decrease with depth; grain-size distribution shifts subtly coarser as agglutinate content (concentrated in &lt;90 \u03BCm fractions) diminishes. <em>Source: McKay et al. (1974, 1991); Morris (1978).</em>
+    </div>
+
+    <h3 class="subhead"><span>Grain-Size Distribution (vol %, column avg to ${D.toFixed(0)} cm)</span><span class="roman">iii.c</span></h3>
+    <div class="size-dist">${sizeBars}</div>
+    <div class="size-labels">${sizeLabels}</div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="lbl">Mean Grain Size (surface)</div>
+        <div class="val">${meanGS.toFixed(0)}<span class="sigma"> \u00b1${meanGSSigma.toFixed(0)}</span><span class="unit"> \u03BCm</span></div>
+      </div>
+      <div class="stat-box">
+        <div class="lbl">Mean Grain Size (col. avg)</div>
+        <div class="val">${meanGSAtDepth.toFixed(0)}<span class="sigma"> \u00b1${meanGSSigma.toFixed(0)}</span><span class="unit"> \u03BCm</span></div>
+      </div>
+    </div>
+    <div class="stats-row" style="margin-top:4px">
+      <div class="stat-box">
+        <div class="lbl">Mareness</div>
+        <div class="val">${(mareness(selected.lat, selected.lon) * 100).toFixed(0)}<span class="unit"> %</span></div>
+      </div>
+    </div>
+
+    <h3 class="subhead"><span>Particle Types (vol %, column avg to ${D.toFixed(0)} cm)</span><span class="roman">iii.d</span></h3>
+    <div class="particle-bar">
+      <div class="seg seg-aggl" style="width:${avgModal.aggl}%">${avgModal.aggl >= 8 ? avgModal.aggl.toFixed(0) + '%' : ''}</div>
+      <div class="seg seg-lithic" style="width:${avgModal.lithic}%">${avgModal.lithic >= 8 ? avgModal.lithic.toFixed(0) + '%' : ''}</div>
+      <div class="seg seg-mineral" style="width:${avgModal.mineral}%">${avgModal.mineral >= 8 ? avgModal.mineral.toFixed(0) + '%' : ''}</div>
+      <div class="seg seg-glass" style="width:${avgModal.glass}%">${avgModal.glass >= 8 ? avgModal.glass.toFixed(0) + '%' : ''}</div>
+    </div>
+    <div class="particle-legend">
+      <div class="pl-item"><span class="pl-swatch seg-aggl"></span>Agglutinates ${avgModal.aggl.toFixed(1)}%</div>
+      <div class="pl-item"><span class="pl-swatch seg-lithic"></span>Lithic ${avgModal.lithic.toFixed(1)}%</div>
+      <div class="pl-item"><span class="pl-swatch seg-mineral"></span>Mineral ${avgModal.mineral.toFixed(1)}%</div>
+      <div class="pl-item"><span class="pl-swatch seg-glass"></span>Glass ${avgModal.glass.toFixed(1)}%</div>
+    </div>
+    <div style="font-size:10px;margin-top:6px;font-style:italic;color:var(--ink-soft)">
+      Surface agglutinate: ${modal.aggl.toFixed(1)}% \u2192 column avg: ${avgModal.aggl.toFixed(1)}%
+      <em>\u00B7 Source: Heiken et al. (1991) Table 7.9; McKay et al. (1974)</em>
+    </div>
+
+    <details class="provenance">
+      <summary>Data Provenance</summary>
+      <div class="provenance-content">
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;font-style:italic">
+          IDW interpolation from ${provenance.length} nearest sample-return sites (1/d\u00B2 weighting):
+        </div>
+        ${provHTML}
+      </div>
+    </details>
+  `;
+}
+
+/* Init */
+drawMoon();
+</script>
+</body>
+</html>
